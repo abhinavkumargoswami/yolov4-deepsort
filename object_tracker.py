@@ -38,6 +38,20 @@ flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 
+track_line = {}
+left_count_trackers = 0
+right_count_trackers = 0
+#modifications by me
+def check_line(array_of_coords):
+  if (array_of_coords[-1][0] > 5) and (array_of_coords[-2][0] < 5):
+    return 1
+  elif (array_of_coords[-1][0] < 5) and (array_of_coords[-2][0] > 5):
+    return -1
+  else:
+    return 0
+trackline = {}
+left_count_trackers = 0
+right_count_trackers = 0
 def main(_argv):
     # Definition of the parameters
     max_cosine_distance = 0.4
@@ -206,10 +220,19 @@ def main(_argv):
                 continue 
             bbox = track.to_tlbr()
             class_name = track.get_class()
-            
+            cords = ((int(bbox[0]) + int(bbox[2]))/2, (int(bbox[1]) + int(bbox[3]))/2)
+            if track.track_id in trackline.keys():
+              track_line[track.track_id].append(cords)
+              if check_line(track_line[track.track_id]) == -1:
+                left_count_trackers = left_count_trackers + 1
+              elif check_line(track_line[track.track_id]) == 1:
+                right_count_trackers = right_count_trackers + 1
+            else:
+               track_line[track.track_id] = [cords]
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
             color = [i * 255 for i in color]
+            cv2.line(frame, (500,0), (500,960), (0,255,0), 3) 
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
